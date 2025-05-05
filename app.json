@@ -1,29 +1,55 @@
 {
   "expo": {
-    "name": "bluescan_mobile",
-    "slug": "bluescan_mobile",
+    "name": "Bluescan",
+    "slug": "bluescan-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to capture images of ocean pollution.",
+        "NSLocationWhenInUseUsageDescription": "This app requires access to your location to tag pollution images.",
+        "NSPhotoLibraryUsageDescription": "This app requires access to your photo library to upload pollution images."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Bluescan to access your camera to capture images of ocean pollution."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Bluescan to access your location to tag pollution images."
+        }
+      ]
+    ]
   }
 }
