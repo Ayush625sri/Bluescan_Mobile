@@ -22,7 +22,7 @@ const HomeScreen = ({ navigation }: any) => {
   const [recentUploads, setRecentUploads] = useState<PollutionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
+  const { activeSession, isSessionActive } = useAuth();
   useEffect(() => {
     loadRecentUploads();
   }, []);
@@ -46,6 +46,32 @@ const HomeScreen = ({ navigation }: any) => {
     loadRecentUploads();
   };
 
+  const renderActiveSessionBanner = () => {
+    if (!activeSession) return null;
+
+    if (activeSession.status === 'active') {
+      return (
+        <TouchableOpacity
+          style={styles.sessionBanner}
+          onPress={() => navigation.navigate('Capture', {
+            screen: 'LiveSession',
+            params: { sessionId: activeSession.id }
+          })}
+        >
+          <View style={styles.liveBadge}>
+            <Text style={styles.liveBadgeText}>LIVE</Text>
+          </View>
+          <Text style={styles.sessionBannerText}>
+            Active session with Web App
+          </Text>
+          <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -66,6 +92,7 @@ const HomeScreen = ({ navigation }: any) => {
             <Ionicons name="person-circle" size={40} color="#0066FF" />
           </TouchableOpacity>
         </View>
+        {renderActiveSessionBanner()}
 
         {/* Quick Actions */}
         <View style={styles.actionsContainer}>
@@ -282,6 +309,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     marginTop: 5,
+  },
+  sessionBanner: {
+    backgroundColor: '#0066FF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    marginHorizontal: 20,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  liveBadge: {
+    backgroundColor: '#FF0000',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  liveBadgeText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  sessionBannerText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    flex: 1,
   },
 });
 

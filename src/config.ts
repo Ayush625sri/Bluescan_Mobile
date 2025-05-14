@@ -1,6 +1,6 @@
 // Development environment
-const DEV_API_URL = 'http://localhost:3000/api';
-const DEV_SOCKET_URL = 'http://localhost:3000';
+const DEV_API_URL = 'http://localhost:5000/api/v1';
+const DEV_SOCKET_URL = 'http://localhost:5000';
 
 // Production environment
 const PROD_API_URL = 'https://api.bluescan.com/api';

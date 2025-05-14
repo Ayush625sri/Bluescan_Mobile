@@ -11,7 +11,8 @@ import HomeScreen from '../screens/HomeScreen';
 import CaptureScreen from '../screens/CaptureScreen';
 import TrendsScreen from '../screens/TrendsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-
+import LiveSessionScreen from '../components/session/LiveSessionScreen';
+import SessionRequestModal from '../components/session/SessionRequestModal';
 import { useAuth } from '../contexts/AuthContext';
 
 const AuthStack = createStackNavigator();
@@ -31,6 +32,14 @@ const CaptureNavigator = () => (
       name="CaptureMain" 
       component={CaptureScreen}
       options={{ title: 'Capture Pollution' }}
+    />
+    <CaptureStack.Screen 
+      name="LiveSession" 
+      component={LiveSessionScreen}
+      options={{ 
+        title: 'Live Session',
+        headerShown: false
+      }}
     />
   </CaptureStack.Navigator>
 );
@@ -69,18 +78,24 @@ const AppNavigator = () => (
 );
 
 const Navigation = () => {
-  const { user, loading } = useAuth();
-
+  const { user, loading, activeSession } = useAuth();
+  
   if (loading) {
     return null; // Or a loading screen
   }
 
   return (
     <NavigationContainer>
-      {/* {user ? <AppNavigator /> : <AuthNavigator />} */}
       <AppNavigator />
+      {/* {user ? <AppNavigator /> : <AuthNavigator />} */}
+      
+      {/* Session request modal */}
+      {activeSession && activeSession.status === 'pending' && (
+        <SessionRequestModal visible={true} />
+      )}
     </NavigationContainer>
   );
 };
+
 
 export default Navigation;

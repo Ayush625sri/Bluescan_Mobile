@@ -1,34 +1,58 @@
+// @ts-nocheck
 import { io, Socket } from 'socket.io-client';
 import { API_URL } from '../config';
 type SocketCallback = (...args: any[]) => void;
+import { SOCKET_URL } from '../config';
 
 class WebSocketService {
   private socket: Socket | null = null;
-//   private listeners: Map<string, Function[]> = new Map();
   private listeners: Map<string, ((...args: any[]) => void)[]> = new Map();
-  connect(token: string) {
-    if (this.socket && this.socket.connected) return;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
 
-    this.socket = io(API_URL, {
+  connect(token: string) {
+     if (this.socket && this.socket.connected) return;
+
+    this.socket = io(SOCKET_URL, {
       auth: {
         token
       },
-      transports: ['websocket']
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: this.maxReconnectAttempts,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
 
-    this.socket.on('connect', () => {
-      console.log('WebSocket connected');
-    });
-
-    this.socket.on('disconnect', () => {
-      console.log('WebSocket disconnected');
-    });
-
+    this.setupSocketListeners();
+    
     // Set up listeners that were registered before connection
     this.listeners.forEach((callbacks, event) => {
       callbacks.forEach(callback => {
         this.socket?.on(event, callback);
       });
+    });
+  }
+  
+  private setupSocketListeners() {
+    if (!this.socket) return;
+    
+    this.socket.on('connect', () => {
+      console.log('WebSocket connected');
+      this.reconnectAttempts = 0;
+    });
+
+    this.socket.on('disconnect', (reason) => {
+      console.log('WebSocket disconnected:', reason);
+    });
+    
+    this.socket.on('connect_error', (error) => {
+      console.error('WebSocket connection error:', error);
+      this.reconnectAttempts++;
+      
+      if (this.reconnectAttempts > this.maxReconnectAttempts) {
+        console.error('Max reconnection attempts reached');
+      }
     });
   }
 
@@ -43,9 +67,9 @@ class WebSocketService {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
-    
+
     this.listeners.get(event)?.push(callback);
-    
+
     if (this.socket) {
       this.socket.on(event, callback);
     }
@@ -66,7 +90,7 @@ class WebSocketService {
     } else {
       this.listeners.delete(event);
     }
-    
+
     if (this.socket) {
       this.socket.off(event, callback);
     }

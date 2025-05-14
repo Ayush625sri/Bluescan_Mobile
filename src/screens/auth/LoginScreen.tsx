@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,12 +14,19 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
-
 const LoginScreen = ({ navigation }: any) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
+
+  useEffect(()=>{
+       const currentUser = useAuth().user;
+    if (currentUser) {
+      // Use replace instead of navigate to clear the navigation stack
+      navigation.navigate('Home');
+    }
+  },[])
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -53,8 +60,8 @@ const LoginScreen = ({ navigation }: any) => {
               style={styles.logo}
               resizeMode="contain"
             />
-            <Text style={styles.appName}>Bluescan</Text>
-            <Text style={styles.tagline}>Ocean Pollution Detection</Text>
+            {/* <Text style={styles.appName}>Bluescan</Text>s */}
+            {/* <Text style={styles.tagline}>Ocean Pollution Detection</Text> */}
           </View>
 
           <View style={styles.formContainer}>
@@ -124,8 +131,8 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 220,
+    height: 220,
     marginBottom: 10,
   },
   appName: {
