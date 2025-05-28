@@ -1,6 +1,6 @@
 // Development environment
-const DEV_API_URL = 'http://localhost:5000/api/v1';
-const DEV_SOCKET_URL = 'http://localhost:5000';
+const DEV_API_URL = ' https://1046-2405-201-6009-9813-d95-ae22-d4b6-ab30.ngrok-free.app/api/v1';
+const DEV_SOCKET_URL = ' https://1046-2405-201-6009-9813-d95-ae22-d4b6-ab30.ngrok-free.app';
 
 // Production environment
 const PROD_API_URL = 'https://api.bluescan.com/api';

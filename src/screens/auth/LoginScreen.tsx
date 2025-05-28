@@ -13,20 +13,22 @@ import {
   Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { API_URL } from '../../config';
+
 const LoginScreen = ({ navigation }: any) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const { signIn, user } = useAuth();
 
-  useEffect(()=>{
-       const currentUser = useAuth().user;
-    if (currentUser) {
-      // Use replace instead of navigate to clear the navigation stack
+  useEffect(() => {
+    if (user) {
       navigation.navigate('Home');
     }
-  },[])
+  }, [user, navigation]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -36,12 +38,15 @@ const LoginScreen = ({ navigation }: any) => {
 
     try {
       setLoading(true);
+      console.log('API URL:', API_URL);
       await signIn(email, password);
     } catch (error: any) {
       Alert.alert(
         'Login Failed',
         error.response?.data?.message || 'Please check your credentials and try again'
       );
+      console.log('Full error:', error); // Add this
+      console.log('Error response:', error.response?.data);
     } finally {
       setLoading(false);
     }
@@ -55,13 +60,11 @@ const LoginScreen = ({ navigation }: any) => {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.logoContainer}>
-            <Image 
+            <Image
               source={require('../../../assets/logo.png')}
               style={styles.logo}
               resizeMode="contain"
             />
-            {/* <Text style={styles.appName}>Bluescan</Text>s */}
-            {/* <Text style={styles.tagline}>Ocean Pollution Detection</Text> */}
           </View>
 
           <View style={styles.formContainer}>
@@ -76,13 +79,25 @@ const LoginScreen = ({ navigation }: any) => {
             />
 
             <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your password"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Enter your password"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={20}
+                  color="#666666"
+                />
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity style={styles.forgotPassword}>
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
@@ -135,16 +150,6 @@ const styles = StyleSheet.create({
     height: 220,
     marginBottom: 10,
   },
-  appName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0066FF',
-  },
-  tagline: {
-    fontSize: 16,
-    color: '#666666',
-    marginTop: 5,
-  },
   formContainer: {
     marginBottom: 30,
   },
@@ -160,6 +165,21 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
     fontSize: 16,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 15,
+    fontSize: 16,
+  },
+  eyeIcon: {
+    padding: 15,
   },
   forgotPassword: {
     alignSelf: 'flex-end',

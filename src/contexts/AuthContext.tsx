@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 import websocketService from '../services/websocket';
 import * as Device from 'expo-device';
@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     async function loadStoredData() {
       try {
-        const storedToken = await SecureStore.getItemAsync('bluescan_token');
+        const storedToken = await AsyncStorage.getItem('bluescan_token');
         if (storedToken) {
           setToken(storedToken);
           api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } catch (error) {
             console.error('Error fetching user profile:', error);
             // Invalid token, clear it
-            await SecureStore.deleteItemAsync('bluescan_token');
+            await AsyncStorage.removeItem('bluescan_token');
             setToken(null);
           }
         }
@@ -110,11 +110,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const registerDevice = async () => {
     try {
       const deviceName = Device.deviceName || 'Mobile Device';
-      const deviceId = await SecureStore.getItemAsync('device_id') ||
+      const deviceId = await AsyncStorage.getItem('device_id') ||
         `mobile_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
       // Store device ID for future use
-      await SecureStore.setItemAsync('device_id', deviceId);
+      await AsyncStorage.setItem('device_id', deviceId);
 
       // Send device info to server via websocket
       if (websocketService.isConnected()) {
@@ -221,7 +221,7 @@ const signIn = async (email: string, password: string) => {
     console.log('User data received:', userData);
 
     // Store token securely
-    await SecureStore.setItemAsync('bluescan_token', authToken);
+    await AsyncStorage.setItem('bluescan_token', authToken);
 
     // Update state
     console.log('Setting token and user state...');
@@ -232,7 +232,7 @@ const signIn = async (email: string, password: string) => {
     return userData; // Return the user data in case it's needed
   } catch (error) {
     console.error('Sign in error:', error);
-    throw error;
+    // throw error;
   }
 };
 
@@ -246,7 +246,7 @@ const signIn = async (email: string, password: string) => {
       }
 
       api.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
-      await SecureStore.setItemAsync('bluescan_token', authToken);
+      await AsyncStorage.setItem('bluescan_token', authToken);
 
       setToken(authToken);
       setUser(userData);
@@ -258,7 +258,7 @@ const signIn = async (email: string, password: string) => {
 
   const signOut = async () => {
     try {
-      await SecureStore.deleteItemAsync('bluescan_token');
+      await AsyncStorage.removeItem('bluescan_token');
       api.defaults.headers.common['Authorization'] = '';
       websocketService.disconnect();
       setToken(null);

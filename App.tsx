@@ -6,7 +6,7 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import Navigation from './src/navigation';
 import { ErrorBoundary } from 'react-error-boundary';
 import React from 'react';
-import { View } from 'react-native';
+import { View, Text } from 'react-native';
 
 function ErrorFallback({error}) {
   return (
