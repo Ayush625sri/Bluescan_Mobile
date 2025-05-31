@@ -6,32 +6,59 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import websocketService from '../../services/websocket';
-
+import * as ImagePicker from 'expo-image-picker';
 const STREAMING_INTERVAL = 500; // Send frames every 500ms
 
 const LiveSessionScreen = ({ route, navigation }) => {
   const { sessionId } = route.params;
   const { activeSession, endSession } = useAuth();
-  
+
   const [isFrontCamera, setIsFrontCamera] = useState(false);
   const [flashMode, setFlashMode] = useState(false);
   const [isStreaming, setIsStreaming] = useState(true);
-  
+
   const cameraRef = useRef(null);
   const streamingIntervalRef = useRef(null);
-  
+
+  const uploadImageFromGallery = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+      base64: true
+    });
+
+    if (!result.canceled) {
+      try {
+        const response = await api.post(`/session/${sessionId}/images`, {
+          image: result.assets[0].base64,
+          filename: 'gallery_image.jpg'
+        }, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        Alert.alert('Success', 'Image uploaded successfully');
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        Alert.alert('Error', 'Failed to upload image');
+      }
+    }
+  };
   useEffect(() => {
     // Start streaming when component mounts
     startStreaming();
-    
+
     return () => {
       stopStreaming();
     };
   }, []);
-  
+
   const startStreaming = () => {
     if (streamingIntervalRef.current) return;
-    
+
     streamingIntervalRef.current = setInterval(async () => {
       if (cameraRef.current && isStreaming) {
         try {
@@ -41,14 +68,14 @@ const LiveSessionScreen = ({ route, navigation }) => {
             base64: true,
             skipProcessing: true,
           });
-          
+
           // Resize to reduce data
           const processedImage = await ImageManipulator.manipulateAsync(
             photo.uri,
             [{ resize: { width: 640 } }],
             { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
           );
-          
+
           // Send via websocket
           websocketService.emit('stream_frame', {
             session_id: sessionId,
@@ -60,19 +87,19 @@ const LiveSessionScreen = ({ route, navigation }) => {
         }
       }
     }, STREAMING_INTERVAL);
-    
+
     setIsStreaming(true);
   };
-  
+
   const stopStreaming = () => {
     if (streamingIntervalRef.current) {
       clearInterval(streamingIntervalRef.current);
       streamingIntervalRef.current = null;
     }
-    
+
     setIsStreaming(false);
   };
-  
+
   const toggleStreaming = () => {
     if (isStreaming) {
       stopStreaming();
@@ -80,7 +107,7 @@ const LiveSessionScreen = ({ route, navigation }) => {
       startStreaming();
     }
   };
-  
+
   const captureHighResImage = async () => {
     if (cameraRef.current) {
       try {
@@ -88,29 +115,29 @@ const LiveSessionScreen = ({ route, navigation }) => {
           quality: 0.9,
           base64: true
         });
-        
+
         websocketService.emit('session_image', {
           session_id: sessionId,
           image: photo.base64,
           is_high_res: true,
           timestamp: Date.now()
         });
-        
+
         Alert.alert('Success', 'High-resolution image sent for analysis');
       } catch (error) {
         console.error('Error capturing image:', error);
       }
     }
   };
-  
+
   const handleEndSession = async () => {
     Alert.alert(
       'End Session',
       'Are you sure you want to end this session?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'End', 
+        {
+          text: 'End',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -125,15 +152,15 @@ const LiveSessionScreen = ({ route, navigation }) => {
       ]
     );
   };
-  
+
   const toggleCamera = () => {
     setIsFrontCamera(!isFrontCamera);
   };
-  
+
   const toggleFlash = () => {
     setFlashMode(!flashMode);
   };
-  
+
   return (
     <View style={styles.container}>
       <Camera
@@ -148,28 +175,33 @@ const LiveSessionScreen = ({ route, navigation }) => {
             <Text style={styles.streamingText}>{isStreaming ? 'STREAMING' : 'PAUSED'}</Text>
           </View>
         </View>
-        
+
         <View style={styles.controls}>
           <TouchableOpacity style={styles.controlButton} onPress={toggleCamera}>
             <Ionicons name="camera-reverse-outline" size={28} color="#FFFFFF" />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.streamButton, !isStreaming && styles.streamButtonPaused]} 
+
+          <TouchableOpacity
+            style={[styles.streamButton, !isStreaming && styles.streamButtonPaused]}
             onPress={toggleStreaming}
           >
             <Ionicons name={isStreaming ? "pause" : "play"} size={30} color="#FFFFFF" />
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.captureButton} onPress={captureHighResImage}>
             <View style={styles.captureButtonInner} />
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.controlButton} onPress={toggleFlash}>
             <Ionicons name={flashMode ? "flash" : "flash-off"} size={28} color="#FFFFFF" />
           </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.controlButton} onPress={uploadImageFromGallery}>
+            <Ionicons name="images" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+
         </View>
-        
+
         <TouchableOpacity style={styles.endButton} onPress={handleEndSession}>
           <Text style={styles.endButtonText}>End Session</Text>
         </TouchableOpacity>

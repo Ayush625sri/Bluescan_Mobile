@@ -70,5 +70,5 @@ export const getUserContributions = async () => {
 
 export const getRecentUploads = async (limit = 10) => {
   const response = await api.get(`/pollution/recent?limit=${limit}`);
-  return response.data.items;
+  return response.data.items|| [];
 };

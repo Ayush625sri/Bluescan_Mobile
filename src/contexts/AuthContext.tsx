@@ -49,15 +49,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load token from storage on initial mount
   useEffect(() => {
+    if (token && user?.id) {
+      console.log('Connecting WebSocket with token:', token);
+      websocketService.on('connected', () => {
+        console.log("registergin device")
+        registerDevice();
+        setupSessionListeners();
+      });
+      websocketService.connect(token, user.id);
+          console.log("connected")
+
+    }
+  }, [token, user?.id]);
+  useEffect(() => {
     async function loadStoredData() {
       try {
         const storedToken = await AsyncStorage.getItem('bluescan_token');
         if (storedToken) {
           setToken(storedToken);
           api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-
+          api.defaults.headers.common['ngrok-skip-browser-warning'] = 'true';
           try {
-            const response = await api.get('/user/profile');
+            const response = await api.get('/auth/me');
             setUser(response.data);
           } catch (error) {
             console.error('Error fetching user profile:', error);
@@ -83,20 +96,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (token) {
       try {
         // Connect to websocket
-        websocketService.connect(token);
-
-        // Register device with server
-        registerDevice();
-
-        // Setup session request listener
-        setupSessionListeners();
-
-        cleanupListeners = () => {
-          // Clean up all listeners
-          websocketService.off('session_request');
-          websocketService.off('session_canceled');
-          websocketService.off('session_ended');
-        };
+        if (token && user?.id) {
+          console.log('Connecting WebSocket with token:', token);
+          websocketService.on('connected', () => {
+            registerDevice();
+            setupSessionListeners();
+          });
+          websocketService.connect(token, user.id);
+          console.log("connected")
+        }
+        // cleanupListeners = () => {
+        //   // Clean up all listeners
+        //   websocketService.off('session_request');
+        //   websocketService.off('session_canceled');
+        //   websocketService.off('session_ended');
+        // };
       } catch (error) {
         console.error('Error setting up WebSocket:', error);
       }
@@ -189,52 +203,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-const signIn = async (email: string, password: string) => {
-  try {
-    console.log('SignIn started with:', email);
-    
-    // Create form data for login
-    const formData = new URLSearchParams();
-    formData.append('username', email);
-    formData.append('password', password);
+  const signIn = async (email: string, password: string) => {
+    try {
+      console.log('SignIn started with:', email);
 
-    // Get auth token
-    const authResponse = await api.post('/auth/login', formData, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+      // Create form data for login
+      const formData = new URLSearchParams();
+      formData.append('username', email);
+      formData.append('password', password);
+
+      // Get auth token
+      const authResponse = await api.post('/auth/login', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+
+      console.log('Auth response received:', authResponse.data);
+      const authToken = authResponse.data.access_token;
+
+      if (!authToken) {
+        throw new Error('Invalid response from server');
       }
-    });
 
-    console.log('Auth response received:', authResponse.data);
-    const authToken = authResponse.data.access_token;
+      // Set token in headers
+      api.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
 
-    if (!authToken) {
-      throw new Error('Invalid response from server');
+      // Get user data
+      const userResponse = await api.get('/auth/me');
+      const userData = userResponse.data;
+      console.log('User data received:', userData);
+
+      // Store token securely
+      await AsyncStorage.setItem('bluescan_token', authToken);
+
+      // Update state
+      console.log('Setting token and user state...');
+      setToken(authToken);
+      setUser(userData);
+      console.log('User state set:', userData);
+
+      return userData; // Return the user data in case it's needed
+    } catch (error) {
+      console.error('Sign in error:', error);
+      // throw error;
     }
-
-    // Set token in headers
-    api.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
-
-    // Get user data
-    const userResponse = await api.get('/auth/me');
-    const userData = userResponse.data;
-    console.log('User data received:', userData);
-
-    // Store token securely
-    await AsyncStorage.setItem('bluescan_token', authToken);
-
-    // Update state
-    console.log('Setting token and user state...');
-    setToken(authToken);
-    setUser(userData);
-    console.log('User state set:', userData);
-    
-    return userData; // Return the user data in case it's needed
-  } catch (error) {
-    console.error('Sign in error:', error);
-    // throw error;
-  }
-};
+  };
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
@@ -256,15 +270,30 @@ const signIn = async (email: string, password: string) => {
     }
   };
 
+  // const signOut = async () => {
+  //   try {
+  //     await AsyncStorage.removeItem('bluescan_token');
+  //     api.defaults.headers.common['Authorization'] = '';
+  //     websocketService.disconnect();
+  //     setToken(null);
+  //     setUser(null);
+  //     setIsSessionActive(false);
+  //     setActiveSession(null);
+  //   } catch (error) {
+  //     console.error('Sign out error:', error);
+  //   }
+  // };
   const signOut = async () => {
     try {
       await AsyncStorage.removeItem('bluescan_token');
-      api.defaults.headers.common['Authorization'] = '';
+      delete api.defaults.headers.common['Authorization'];
       websocketService.disconnect();
       setToken(null);
       setUser(null);
       setIsSessionActive(false);
       setActiveSession(null);
+
+      console.log('Sign out successful');
     } catch (error) {
       console.error('Sign out error:', error);
     }
